@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Consulta de Suscriptores</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+  <h2 class="mb-4">Consulta de Suscriptores</h2>
+
+  <form id="searchForm" class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label for="idInput" class="form-label">Buscar por ID</label>
+      <input type="number" id="idInput" class="form-control" placeholder="ID suscriptor" />
+    </div>
+
+    <div class="col-md-3">
+      <label for="desdeInput" class="form-label">Fecha desde</label>
+      <input type="date" id="desdeInput" class="form-control" />
+    </div>
+
+    <div class="col-md-3">
+      <label for="hastaInput" class="form-label">Fecha hasta</label>
+      <input type="date" id="hastaInput" class="form-control" />
+    </div>
+
+    <div class="col-md-3 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary me-2">Buscar</button>
+      <button type="button" id="btnAll" class="btn btn-secondary">Mostrar todos</button>
+    </div>
+  </form>
+
+  <div id="alertPlaceholder"></div>
+
+  <table class="table table-striped table-bordered" id="resultTable">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th>Fecha Registro</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Aquí irán los resultados -->
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const tableBody = document.querySelector('#resultTable tbody');
+  const alertPlaceholder = document.getElementById('alertPlaceholder');
+
+  function showAlert(message, type = 'danger') {
+    alertPlaceholder.innerHTML = `
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+    `;
+  }
+
+  function clearAlert() {
+    alertPlaceholder.innerHTML = '';
+  }
+
+  function renderTable(suscriptores) {
+    tableBody.innerHTML = '';
+    if (!suscriptores || suscriptores.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="4" class="text-center">No hay resultados</td></tr>`;
+      return;
+    }
+    suscriptores.forEach(s => {
+      const fecha = new Date(s.fecha_registro).toLocaleDateString();
+      tableBody.innerHTML += `
+        <tr>
+          <td>${s.id}</td>
+          <td>${s.nombre}</td>
+          <td>${s.email}</td>
+          <td>${fecha}</td>
+        </tr>
+      `;
+    });
+  }
+
+  async function fetchSuscriptores(url) {
+    try {
+      clearAlert();
+      const res = await fetch(url);
+      if (!res.ok) {
+        const err = await res.json();
+        showAlert(err.message || 'Error al obtener datos');
+        renderTable([]);
+        return;
+      }
+      const data = await res.json();
+      // Si viene un solo objeto, pásalo a array para renderizar
+      if (!Array.isArray(data)) {
+        renderTable([data]);
+      } else {
+        renderTable(data);
+      }
+    } catch (error) {
+      showAlert('Error de conexión');
+      renderTable([]);
+    }
+  }
+
+  document.getElementById('searchForm').addEventListener('submit', e => {
+    e.preventDefault();
+
+    const id = document.getElementById('idInput').value.trim();
+    const desde = document.getElementById('desdeInput').value;
+    const hasta = document.getElementById('hastaInput').value;
+
+    if (id) {
+      fetchSuscriptores(`/suscriptores/${id}`);
+    } else if (desde && hasta) {
+      fetchSuscriptores(`/suscriptores/fecha?desde=${desde}&hasta=${hasta}`);
+    } else {
+      showAlert('Ingrese un ID o un rango de fechas para buscar', 'warning');
+      renderTable([]);
+    }
+  });
+
+  document.getElementById('btnAll').addEventListener('click', () => {
+    fetchSuscriptores('/suscriptores');
+  });
+
+  // Cargar todos al inicio
+  fetchSuscriptores('/suscriptores');
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
