@@ -22,26 +22,26 @@ router.post('/save', function (req, res, next) {
 });
 
 
-router.get('/:id', async (req, res) => {
+// Obtener todos los suscriptores
+router.get('/', async (req, res) => {
   try {
-    const suscriptor = await Suscriptor.findOne(req.params.id);
-    if (!suscriptor) return res.status(404).json({ message: 'Suscriptor no encontrado' });
-    res.json(suscriptor);
+    const suscriptores = await suscriptor.findAll();
+    res.json(suscriptores);
   } catch (error) {
-    console.error('Error al buscar por ID:', error);
+    console.error('Error al obtener suscriptores:', error);
     res.status(500).json({ message: 'Error del servidor', error });
   }
 });
 
 // Obtener suscriptores por rango de fechas
-// Ejemplo consulta: /fecha?desde=2023-01-01&hasta=2023-12-31
+// Ejemplo: /fecha?desde=2023-01-01&hasta=2023-12-31
 router.get('/fecha', async (req, res) => {
   const { desde, hasta } = req.query;
   if (!desde || !hasta) {
     return res.status(400).json({ message: 'Debe proveer las fechas desde y hasta' });
   }
   try {
-    const suscriptores = await Suscriptor.findAll({
+    const suscriptores = await suscriptor.findAll({
       where: {
         fecha_registro: {
           [Op.between]: [new Date(desde), new Date(hasta)]
@@ -55,12 +55,14 @@ router.get('/fecha', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+// Obtener suscriptor por ID
+router.get('/:id', async (req, res) => {
   try {
-    const suscriptores = await Suscriptor.findAll();
-    res.json(suscriptores);
+    const suscriptor = await suscriptor.findByPk(req.params.id);
+    if (!suscriptor) return res.status(404).json({ message: 'Suscriptor no encontrado' });
+    res.json(suscriptor);
   } catch (error) {
-    console.error('Error al obtener suscriptores:', error);
+    console.error('Error al buscar por ID:', error);
     res.status(500).json({ message: 'Error del servidor', error });
   }
 });
